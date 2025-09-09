@@ -1,0 +1,35 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "index.js",
+            "use": "@vercel/node"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/r/(.*)",
+            "dest": "index.js"
+        },
+        {
+            "src": "/crear",
+            "dest": "index.js"
+        },
+        {
+            "src": "/actualizar/(.*)",
+            "dest": "index.js"
+        },
+        {
+            "src": "/eliminar/(.*)",
+            "dest": "index.js"
+        },
+        {
+            "src": "/listar",
+            "dest": "index.js"
+        },
+        {
+            "src": "/qrs/(.*)",
+            "dest": "public/qrs/$1"
+        }
+    ]
+}
