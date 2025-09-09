@@ -1,11 +1,19 @@
 const express = require('express');
 const QRCode = require('qrcode');
-const fs = require('fs');
 const path = require('path');
 
 const app = express();
 const PORT = 3000;
 const TOKEN = process.env.SECRET_TOKEN || 'mi-token-seguro';
+
+// Cargar rutas iniciales desde archivo estático
+let rutas = {};
+try {
+    rutas = require('./rutas.json');
+} catch (error) {
+    console.warn('No se pudo cargar rutas.json. Usando objeto vacío.');
+    rutas = {};
+}
 
 app.use(express.json());
 app.use('/qrs', express.static(path.join(__dirname, 'public/qrs')));
@@ -19,14 +27,6 @@ function validarToken(req, res, next) {
     next();
 }
 
-// Cargar rutas existentes
-let rutas = {};
-if (fs.existsSync('rutas.json')) {
-    rutas = JSON.parse(fs.readFileSync('rutas.json', 'utf8'));
-} else {
-    fs.writeFileSync('rutas.json', JSON.stringify({}, null, 2));
-}
-
 // Crear QR dinámico
 app.post('/crear', validarToken, async (req, res) => {
     const { nombre, destino } = req.body;
@@ -35,14 +35,12 @@ app.post('/crear', validarToken, async (req, res) => {
     }
 
     rutas[nombre] = destino;
-    fs.writeFileSync('rutas.json', JSON.stringify(rutas, null, 2));
 
-    const urlIntermedia = `https://tu-dominio.vercel.app/r/${nombre}`;
+    const urlIntermedia = `https://olmedoapp.vercel.app/r/${nombre}`;
     const svg = await QRCode.toString(urlIntermedia, { type: 'svg' });
-    const qrPath = path.join(__dirname, `public/qrs/${nombre}.svg`);
-    fs.writeFileSync(qrPath, svg);
 
-    res.json({ mensaje: 'QR dinámico creado', url_qr: `/qrs/${nombre}.svg`, destino });
+    // No se guarda el SVG en disco en Vercel
+    res.json({ mensaje: 'QR dinámico creado', svg, destino });
 });
 
 // Redirección dinámica
@@ -65,8 +63,6 @@ app.put('/actualizar/:nombre', validarToken, (req, res) => {
     }
 
     rutas[nombre] = nuevoDestino;
-    fs.writeFileSync('rutas.json', JSON.stringify(rutas, null, 2));
-
     res.json({ mensaje: 'Destino actualizado', nombre, nuevoDestino });
 });
 
@@ -79,8 +75,6 @@ app.delete('/eliminar/:nombre', validarToken, (req, res) => {
     }
 
     delete rutas[nombre];
-    fs.writeFileSync('rutas.json', JSON.stringify(rutas, null, 2));
-
     res.json({ mensaje: 'Ruta eliminada', nombre });
 });
 
